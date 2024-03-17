@@ -1,5 +1,7 @@
 from flask import jsonify, request
 from config import app, collection_name, model, dbClient
+from qdrant_client.models import Filter, FieldCondition, Range
+
 
 def validate_search_query(search_query):
     if not search_query or not isinstance(search_query, str):
@@ -24,7 +26,7 @@ def process_search_query(search_query):
     return similar_matches
 
 
-@app.route('/get_top_matches', methods=['POST'])
+@app.route('/get_top_matches', methods = ['POST'])
 def get_top_matches():
     try:
         search_query = request.json.get('searchQuery')
@@ -38,6 +40,20 @@ def get_top_matches():
     except Exception as e:
         error_message = {"error": str(e)}
         return jsonify(error_message), 500
+    
+
+@app.route('/get_wedding_details', methods = ['POST'])
+def get_wedding_details():
+    try:
+        selected_wedding = request.json.get('selectedWedding')
+
+        if not validate_search_query(selected_wedding):
+            return jsonify({"error": "Invalid wedding format"}), 400
+        
+    except Exception as e:
+        error_message = {"error": str(e)}
+        return jsonify(error_message), 500
+
 
 if __name__ == "__main__":
     app.run(debug=True)
