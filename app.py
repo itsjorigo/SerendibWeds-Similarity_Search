@@ -42,18 +42,5 @@ def get_top_matches():
         return jsonify(error_message), 500
     
 
-@app.route('/get_wedding_details', methods = ['POST'])
-def get_wedding_details():
-    try:
-        selected_wedding = request.json.get('selectedWedding')
-
-        if not validate_search_query(selected_wedding):
-            return jsonify({"error": "Invalid wedding format"}), 400
-        
-    except Exception as e:
-        error_message = {"error": str(e)}
-        return jsonify(error_message), 500
-
-
 if __name__ == "__main__":
     app.run(debug=True)
