@@ -1,18 +1,49 @@
-import os
 import csv
-from flask import jsonify, request
+import os
+import logging
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
-from config import app, collection_name, model, dbClient
-from qdrant_client.models import Filter, FieldCondition, Range
-from qdrant_client.http.models import PointStruct, VectorParams, Distance
+
+app = Flask(__name__)
+CORS(app)
+
+# Setup logging
+logging.basicConfig(level=logging.ERROR)
+logger = logging.getLogger(__name__)
+
+def initialize_qdrant_client():
+    try:
+        # qdrant_url = os.getenv("QDRANT_URL")  # Fetch URL from environment variable
+        qdrant_url = "https://e3541770-0ff4-4afd-82a7-1fcd383f93c9.us-east4-0.gcp.cloud.qdrant.io:6333"
+
+        # qdrant_api_key = os.getenv("QDRANT_API_KEY")  # Fetch API key from environment variable
+        qdrant_api_key = "2qW8PUMwWLxGl4B7h-vK3CKrafvIiaYsk40wuVFFOzFp3yukdEbZ6Q"
+        return QdrantClient(url=qdrant_url, api_key=qdrant_api_key)
+    except Exception as e:
+        logger.error(f"Error initializing Qdrant client: {e}")
+        return None
+    
+
+def initialize_sentence_transformer_model():
+    try:
+        return SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+    except Exception as e:
+        logger.error(f"Error initializing SentenceTransformer model: {e}")
+        return None
 
 def read_data(file_path):
-    data = []
-    with open(file_path, 'r') as file:
-        reader = csv.DictReader(file)
-        for row in reader:
-            data.append(row)
-    return data
+    try:
+        data = []
+        with open(file_path, 'r') as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                data.append(row)
+        return data
+    except Exception as e:
+        logger.error(f"Error reading data from file: {e}")
+        return []
 
 def validate_search_query(search_query):
     if not search_query or not isinstance(search_query, str):
@@ -20,7 +51,7 @@ def validate_search_query(search_query):
     return  True
 
 
-def process_search_query(search_query):
+def process_search_query(search_query, dbClient, collection_name, model):
     search_query_embedding = model.encode([search_query])[0]
     hits = dbClient.search(
         collection_name=collection_name,
@@ -40,53 +71,25 @@ def process_search_query(search_query):
 @app.route('/get_top_matches', methods = ['POST'])
 def get_top_matches():
     try:
+        dbClient = initialize_qdrant_client()
+        collection_name = "SerendibWeds_weddings_dataset"
+
+        # Initialize SentenceTransformer model
+        model = initialize_sentence_transformer_model()
+
         search_query = request.json.get('searchQuery')
         
         if not validate_search_query(search_query):
             return jsonify({"error": "Invalid search query format"}), 400
         
-        similar_matches = process_search_query(search_query)
+        similar_matches = process_search_query(search_query, dbClient, collection_name, model)
         return jsonify(similar_matches), 200
     
     except Exception as e:
         error_message = {"error": str(e)}
+        logger.error(f"Error processing request: {error_message}")
         return jsonify(error_message), 500
     
 
-@app.route('/submit-wedding-data', methods=['POST'])
-def upsert_to_qdrant():
-        file_path = 'weddingData.csv'
-        try:
-            data = request.json.get('weddingQuery')
-            if data:
-                descriptions = [row['description'] for row in data]
-
-                model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
-                embeddings = model.encode(descriptions)
-
-                client = dbClient
-                column_names = data[0].keys()
-                vector_size = len(embeddings[0])
-
-                for i, (embedding, row) in enumerate(zip(embeddings, data)):
-                    wedding_data = {column: row[column] for column in column_names}
-
-                    progress_info = client.upsert(
-                        collection_name=collection_name,
-                        points=[
-                            PointStruct(
-                                id=i,
-                                vector=embedding.tolist(),
-                                payload=wedding_data
-                            )
-                        ]
-                    )
-                    print(progress_info)
-                return jsonify({"message": "Data indexed successfully."}), 200
-            else:
-                return jsonify({"error": "No data found in the request."}), 400
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
-
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False)

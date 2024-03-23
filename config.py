@@ -27,7 +27,7 @@ def initialize_sentence_transformer_model():
 
 # Initialize Qdrant client and collection
 dbClient = initialize_qdrant_client()
-collection_name = "SerendibWeds_past_weddings"
+collection_name = "SerendibWeds_weddings_dataset"
 
 # Initialize SentenceTransformer model
 model = initialize_sentence_transformer_model()

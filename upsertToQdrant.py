@@ -13,37 +13,8 @@ def read_data(file_path):
             data.append(row)
     return data
 
-@app.route('/submit-wedding-data', methods=['POST'])
-def upsert_to_qdrant(client, collection_name, embeddings, data):
-    column_names = data[0].keys()
-    vector_size = len(embeddings[0])
-
-    client.create_collection(
-        collection_name=collection_name,
-        vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),
-    )
-
-    for i, (embedding, row) in enumerate(zip(embeddings, data)):
-        wedding_data = {column: row[column] for column in column_names}
-
-        progress_info = client.upsert(
-            collection_name=collection_name,
-            points=[
-                PointStruct(
-                    id=i,
-                    vector=embedding.tolist(),
-                    payload=wedding_data
-                )
-            ]
-        )
-        print(progress_info)
-    print("Data indexed successfully.")
-
-
-if __name__ == "__main__":
-
-    def upsert_to_qdrant():
-        file_path = 'weddingData.csv'
+def upsert_to_qdrant():
+        file_path = 'SerendibWedstest.csv'
         try:
             data = read_data(file_path)
             if data:
@@ -80,3 +51,8 @@ if __name__ == "__main__":
                 print("No data found in the CSV file.")
         except Exception as e:
             print(f"An error occurred: {e}")
+
+
+if __name__ == "__main__":
+    upsert_to_qdrant()
+    
