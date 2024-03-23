@@ -105,8 +105,6 @@ pydantic==2.6.1
     # via qdrant-client
 pydantic-core==2.16.2
     # via pydantic
-pywin32==306
-    # via portalocker
 pyyaml==6.0
     # via
     #   huggingface-hub
