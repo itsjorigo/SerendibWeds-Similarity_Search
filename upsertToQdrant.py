@@ -1,4 +1,3 @@
-import os
 import csv
 from flask import jsonify, request
 from config import dbClient, collection_name

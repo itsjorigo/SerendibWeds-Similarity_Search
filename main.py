@@ -1,3 +1,4 @@
+import os
 import csv
 import logging
 from flask import Flask, jsonify, request
@@ -14,11 +15,9 @@ logger = logging.getLogger(__name__)
 
 def initialize_qdrant_client():
     try:
-        # qdrant_url = os.getenv("QDRANT_URL")  # Fetch URL from environment variable
         qdrant_url = "https://e3541770-0ff4-4afd-82a7-1fcd383f93c9.us-east4-0.gcp.cloud.qdrant.io:6333"
-
-        # qdrant_api_key = os.getenv("QDRANT_API_KEY")  # Fetch API key from environment variable
         qdrant_api_key = "2qW8PUMwWLxGl4B7h-vK3CKrafvIiaYsk40wuVFFOzFp3yukdEbZ6Q"
+        
         return QdrantClient(url=qdrant_url, api_key=qdrant_api_key)
     except Exception as e:
         logger.error(f"Error initializing Qdrant client: {e}")
@@ -91,4 +90,4 @@ def get_top_matches():
     
 
 if __name__ == "__main__":
-    app.run(debug=False)
+    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
